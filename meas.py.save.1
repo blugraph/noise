@@ -32,8 +32,7 @@ tofile=[]
 
 lps_int=1
 leq_int=10
-
-SEND_LOOP=60 
+SEND_LOOP=10
 
 setNameList = [
 'remote_cntrl',
@@ -101,47 +100,6 @@ def callback(in_data, frame_count, time_info, status):
 
 noswals={}
 
-
-#time.sleep(3)
-
-#This section deals with GPS
-session = gps.gps()
-#os.system('clear')
-print ' GPS reading'
-#print '----------------------------------------'
-print 'latitude    ' , session.fix.latitude
-print 'longitude   ' , session.fix.longitude
-print 'time utc    ' , session.utc, session.fix.time
-#print 'altitude    ' , session.fix.altitude
-#print 'eph         ' , session.fix.eph
-#print 'epv         ' , session.fix.epv
-#print 'ept         ' , session.fix.ept
-#print 'speed       ' , session.fix.speed
-#print 'climb       ' , session.fix.climb
-#print ' Satellites (total of', len(session.satellites) , ' in view)'
-#for i in session.satellites:
-#    print '\t', i
-
-for i in range (1,2):
-        print "Waiting for GPS."
-        time.sleep(1)
-        if (session.fix.latitude == 0.0 or session.fix.longitude == 0.0):
-                print "Waiting for GPS.."
-                time.sleep(1)
-        elif (session.utc == 'nan'):
-                print "Waiting for GPS..."
-                time.sleep(1)
-        else:
-                print "Locking to GPS"
-
-if (session.fix.latitude == 0.0 or session.fix.longitude == 0.0 or session.utc == 'nan'):
-        print "Cant find the location"
-        print "Cant find time"
-
-
-
-
-
 p = os.popen("df -h /")
 i = 0
 for i in range (1, 3):
@@ -149,7 +107,7 @@ for i in range (1, 3):
         if i==2:
                 disk_space= (line.split()[3])
 
-ser1 = serial.Serial("/dev/ttyUSB0", baudrate=115200, timeout=2)
+ser1 = serial.Serial("/dev/ttyUSB0", timeout=2)
 print ser1
 ser1.flushInput()
 
@@ -283,9 +241,7 @@ while 1:
 #                        ser1.write(data[21])
 #                        ser1.write('\r\n')
                         r2 = requests.put("http://52.74.191.39/blunois/stationdataup.php",data="N1001")
-#                        network_send=data[22] //to see if send over or store locally 
-			network_send="ON"
-			time.sleep(2)
+                        time.sleep(2)
                 except:
                         print "No Network avavailable"
                         print "Unexpected error:", sys.exc_info()[0]
@@ -320,13 +276,12 @@ while 1:
  		  if measure==1:
 			meas_star_time=time.time()
 		    	while ((time.time() - meas_star_time) < SEND_LOOP) or (time.time() - meas_star_time) < meas_int:	
-				ser1.flushInput()
+#				ser1.flushInput()
 	                        ser1.write("DOD?")
         	                ser1.write('\r\n')
-				time.sleep(meas_int)
 		                while ser1.inWaiting() > 0:
                 	                out += ser1.read(1)
-#				print out	
+				print out	
 			        try:
         	                       	noise= out.splitlines()[2]
 					print noise
@@ -336,37 +291,36 @@ while 1:
                                 	tofile.append(payload)
 	                        except:
                		               print "No Response from the Machine"
-				#time.sleep(meas_int) 
+				time.sleep(meas_int) 
 			if (len(tofile))>0:	
                 		print "At least one data in the making"
         			try:
-#				   if network_send=="ON":
                 			r1 = requests.put("http://52.74.191.39/blunois/noisedata.php", data=json.dumps(tofile), timeout=0.1)
 	                		print r1.status_code,": server response."
 #       	        		print r1.content
                 			del tofile[:]
         			except:
                 			print ": Network Failed while uploading data buffer:"	  
-				if len(tofile)>BACKLOG_BUFF_LEN:
-					dir_name= "/home/pi/dev/measure/"+time.strftime("%Y-%m-%d")
-        	    			try:
-                				os.makedirs(dir_name)
-            				except OSError:
-                				if os.path.exists(dir_name):
-                        				print ": Already directory exists"
-                				else:
-                        				print ": Some system Error in creating directory"
+				        if len(tofile)>BACKLOG_BUFF_LEN:
+					    	dir_name= "/home/pi/dev/measure/"+time.strftime("%Y-%m-%d")
+        	    				try:
+                					os.makedirs(dir_name)
+            					except OSError:
+                					if os.path.exists(dir_name):
+                        					print t,": Already directory exists"
+                					else:
+                        					print t,": Some system Error in creating directory"
+	
+        				        	print t,": Failed creating the directory"
 
-       				        	print ": Failed creating the directory"
-
-		            		try:
-              					base_filename=time.strftime("%H_%M_%S")
-               					abs_file_name=os.path.join(dir_name, base_filename + "." + "txt")
-               					f = open(abs_file_name, 'w')
-               					print>>f, json.dumps(tofile)
-			                	del tofile[:]
-            				except:
-                				print ": Failed to create file"
+			            		try:
+                					base_filename=time.strftime("%H_%M_%S")
+                					abs_file_name=os.path.join(dir_name, base_filename + "." + "txt")
+                					f = open(abs_file_name, 'w')
+                					print>>f, json.dumps(tofile)
+				                	del tofile[:]
+            					except:
+                					print t,": Failed to create file"
 				
 		else:
 			print "Measure Released"

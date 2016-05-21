@@ -1,0 +1,40 @@
+import time
+from datetime import datetime
+import RPi.GPIO as GPIO
+import requests
+import json
+import serial
+import os
+import struct
+
+import gps, os, time
+
+cr=0x0D
+lf=0x0A
+
+ser1 = serial.Serial("/dev/ttyUSB0", timeout=2)
+print ser1
+
+ser1.write("Frequency Weighting?")
+ser1.write('\r\n')
+
+while ser1.inWaiting() > 0:
+      out += ser1.read(1)
+      print out
+
+
+ser1.write("Measure,Start")
+ser1.write('\r\n')
+
+ser1.write('\r\n')
+
+
+while ser1.inWaiting() > 0:
+      out += ser1.read(1)
+try:
+      noise= out.splitlines()[1]
+except:
+      print "No Response from the Machine"
+
+print noise
+

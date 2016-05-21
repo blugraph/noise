@@ -23,7 +23,7 @@ stationID="N1001"
 file_list_local = []
 file_list_target = []
 SERVER_ADDR = "52.74.191.39"
-RUN_DIR = "/home/pi/dev/"
+RUN_DIR = "/media/files/"
 
 dir_name = RUN_DIR
 
